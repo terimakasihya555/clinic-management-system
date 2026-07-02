@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block content %}
+<h3>Pemeriksaan Pasien</h3>
+<p>Nomor: <b>{{ entry.number }}</b> | Pasien: <b>{{ entry.patient.name }}</b></p>
+<form method="post">
+  <div class="mb-3"><label>Diagnosis</label><textarea class="form-control" name="diagnosis"></textarea></div>
+  <div class="mb-3"><label>Catatan</label><textarea class="form-control" name="notes"></textarea></div>
+  <h5>Referensi Stok Obat</h5>
+  <ul>{% for m in medicines %}<li>{{ m.name }}: {{ m.stock }} {{ m.unit }}</li>{% endfor %}</ul>
+  <button class="btn btn-success">Simpan Pemeriksaan</button>
+</form>
+{% endblock %}

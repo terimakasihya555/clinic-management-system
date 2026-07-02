@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block content %}
+<h3>Dashboard Dokter</h3>
+<table class="table table-striped"><thead><tr><th>Nomor</th><th>Pasien</th><th>Aksi</th></tr></thead><tbody>
+{% for q in queue %}
+<tr><td>{{ q.number }}</td><td>{{ q.patient.name }}</td><td><form method="post" action="{{ url_for('doctor.call', queue_id=q.id) }}"><button class="btn btn-primary btn-sm">Panggil</button></form></td></tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}

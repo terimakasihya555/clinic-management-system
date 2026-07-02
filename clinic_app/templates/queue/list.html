@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block content %}
+<h3>Daftar Antrian</h3>
+<a class="btn btn-outline-primary mb-3" href="{{ url_for('queue.display') }}" target="_blank">Buka Monitor</a>
+<table class="table table-striped"><thead><tr><th>Nomor</th><th>Pasien</th><th>Jenis</th><th>Status</th></tr></thead><tbody>
+{% for e in entries %}
+<tr><td>{{ e.number }}</td><td>{{ e.patient.name }}</td><td>{{ e.kind }}</td><td>{{ e.status }}</td></tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}

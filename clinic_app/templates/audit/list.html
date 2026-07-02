@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block content %}
+<h3>Audit Log</h3>
+<table class="table table-striped table-sm"><thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Module</th><th>IP</th></tr></thead><tbody>
+{% for l in logs %}
+<tr><td>{{ l.timestamp }}</td><td>{{ l.user.name if l.user else "-" }}</td><td>{{ l.action }}</td><td>{{ l.module }}</td><td>{{ l.ip_address }}</td></tr>
+{% endfor %}
+</tbody></table>
+{% endblock %}
