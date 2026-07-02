@@ -1,17 +1,93 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-4">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h4 class="mb-3">Login</h4>
-        <form method="post">
-          <div class="mb-3"><label>Email</label><input class="form-control" name="email"></div>
-          <div class="mb-3"><label>Password</label><input class="form-control" type="password" name="password"></div>
-          <button class="btn btn-primary w-100">Login</button>
-        </form>
+
+<div class="login-wrapper">
+  <div class="login-card shadow-lg">
+    <div class="row g-0">
+
+      <div class="col-md-6 login-left d-none d-md-flex">
+        <div>
+          <h1>Clinic System</h1>
+          <p>
+            Sistem informasi klinik untuk mengelola pasien, antrian,
+            rekam medis, resep, stok obat, dan audit aktivitas pengguna.
+          </p>
+        </div>
       </div>
+
+      <div class="col-md-6 bg-white p-5">
+        <div class="mb-4">
+          <h3 class="fw-bold">Login</h3>
+          <p class="text-muted">Masuk ke akun klinik Anda</p>
+        </div>
+
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input
+              class="form-control form-control-lg"
+              name="email"
+              type="email"
+              placeholder="Masukkan email"
+              required
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <div class="input-group">
+              <input
+                id="passwordInput"
+                class="form-control form-control-lg"
+                type="password"
+                name="password"
+                placeholder="Masukkan password"
+                required
+              >
+              <button
+                class="btn btn-outline-secondary"
+                type="button"
+                onclick="togglePassword()"
+              >
+                Show
+              </button>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="remember">
+              <label class="form-check-label" for="remember">
+                Remember me
+              </label>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg w-100">
+            Login
+          </button>
+        </form>
+
+        <div class="mt-4 small text-muted">
+          Demo account:
+          <br>
+          Admin: admin@clinic.local / admin123
+          <br>
+          Doctor: doctor@clinic.local / doctor123
+          <br>
+          Receptionist: reception@clinic.local / reception123
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
+
+<script>
+function togglePassword() {
+  const input = document.getElementById("passwordInput");
+  input.type = input.type === "password" ? "text" : "password";
+}
+</script>
+
 {% endblock %}

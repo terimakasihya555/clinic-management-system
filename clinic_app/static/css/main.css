@@ -1,2 +1,70 @@
-body { min-height: 100vh; }
-.no-copy { user-select: none; }
+body {
+  min-height: 100vh;
+  background: #f4f7fb;
+}
+
+.no-copy {
+  user-select: none;
+}
+
+.login-wrapper {
+  min-height: calc(100vh - 56px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 1000px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.login-left {
+  min-height: 560px;
+  background: linear-gradient(135deg, #0d6efd, #084298);
+  color: white;
+  align-items: center;
+  padding: 60px;
+}
+
+.login-left h1 {
+  font-weight: 800;
+  font-size: 42px;
+  margin-bottom: 20px;
+}
+
+.login-left p {
+  font-size: 18px;
+  line-height: 1.7;
+  opacity: 0.95;
+}
+
+.form-control {
+  border-radius: 12px;
+}
+
+.btn {
+  border-radius: 12px;
+}
+
+.card {
+  border-radius: 18px;
+}
+
+.table {
+  background: white;
+}
+
+@media (max-width: 768px) {
+  .login-wrapper {
+    padding: 20px 12px;
+  }
+
+  .login-card {
+    border-radius: 18px;
+  }
+}

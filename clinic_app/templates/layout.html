@@ -18,7 +18,9 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('patients.index') }}">Pasien</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('queue.index') }}">Antrian</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('doctor.dashboard') }}">Dokter</a></li>
+        {% if current_user.role in ["admin", "receptionist"] %}
         <li class="nav-item"><a class="nav-link" href="{{ url_for('inventory.index') }}">Obat</a></li>
+        {% endif %}        
         {% if current_user.role == "admin" %}
         <li class="nav-item"><a class="nav-link" href="{{ url_for('audit.index') }}">Audit Log</a></li>
         {% endif %}
