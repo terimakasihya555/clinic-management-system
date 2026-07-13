@@ -29,6 +29,7 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     init_security(app)
 
+    from clinic_app.blueprints.users.routes import users_bp
     from clinic_app.blueprints.auth.routes import auth_bp
     from clinic_app.blueprints.patients.routes import patients_bp
     from clinic_app.blueprints.queue.routes import queue_bp
@@ -36,6 +37,7 @@ def create_app(config_class=Config):
     from clinic_app.blueprints.inventory.routes import inventory_bp
     from clinic_app.blueprints.audit.routes import audit_bp
 
+    app.register_blueprint(users_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(patients_bp)
     app.register_blueprint(queue_bp)

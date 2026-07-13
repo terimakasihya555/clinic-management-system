@@ -54,6 +54,9 @@
         <a href="{{ url_for('audit.index') }}" class="menu-link">
           <span>🛡️</span> Audit Log
         </a>
+        <a href="{{ url_for('users.index') }}" class="menu-link">
+        <span>👥</span> User Management
+        </a>
       {% endif %}
 
       {% if current_user.role == "receptionist" %}

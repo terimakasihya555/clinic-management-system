@@ -354,3 +354,15 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.user-table-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: #e0ecff;
+  color: #0d6efd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
