@@ -1,10 +1,224 @@
 {% extends "layout.html" %}
 {% block content %}
-<h3>Daftar Antrian</h3>
-<a class="btn btn-outline-primary mb-3" href="{{ url_for('queue.display') }}" target="_blank">Buka Monitor</a>
-<table class="table table-striped"><thead><tr><th>Nomor</th><th>Pasien</th><th>Jenis</th><th>Status</th></tr></thead><tbody>
-{% for e in entries %}
-<tr><td>{{ e.number }}</td><td>{{ e.patient.name }}</td><td>{{ e.kind }}</td><td>{{ e.status }}</td></tr>
-{% endfor %}
-</tbody></table>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">Manajemen Antrian</h3>
+    <p class="text-muted mb-0">
+      Pantau dan kelola antrian pasien berdasarkan prioritas.
+    </p>
+  </div>
+
+  <a href="{{ url_for('queue.display') }}" target="_blank" class="btn btn-primary">
+    Buka Monitor Antrian
+  </a>
+</div>
+
+<div class="row g-4 mb-4">
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Menunggu</p>
+        <h3 class="fw-bold mb-0">{{ stats.waiting }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Sedang Diperiksa</p>
+        <h3 class="fw-bold mb-0">{{ stats.serving }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Selesai</p>
+        <h3 class="fw-bold mb-0">{{ stats.done }}</h3>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2">
+      <div class="col-md-10">
+        <select name="status" class="form-select">
+          <option value="">Semua Status</option>
+          <option value="waiting" {% if selected_status == "waiting" %}selected{% endif %}>
+            Menunggu
+          </option>
+          <option value="serving" {% if selected_status == "serving" %}selected{% endif %}>
+            Sedang Diperiksa
+          </option>
+          <option value="done" {% if selected_status == "done" %}selected{% endif %}>
+            Selesai
+          </option>
+        </select>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-outline-primary">
+          Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-0 pt-4 px-4">
+    <h5 class="fw-bold mb-0">Daftar Antrian</h5>
+    <small class="text-muted">
+      Urutan berdasarkan prioritas dan waktu kedatangan.
+    </small>
+  </div>
+
+  <div class="card-body px-4">
+
+    {% if entries %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Nomor</th>
+            <th>Pasien</th>
+            <th>Jenis</th>
+            <th>Status</th>
+            <th>Waktu Masuk</th>
+            <th class="text-end">Aksi</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for entry in entries %}
+          <tr>
+            <td>
+              <span class="queue-number
+                {% if entry.kind == 'emergency' %}queue-emergency{% endif %}
+              ">
+                {{ entry.number }}
+              </span>
+            </td>
+
+            <td>
+              <div class="fw-semibold">{{ entry.patient.name }}</div>
+              <small class="text-muted">
+                {{ entry.patient.medical_record_number or "-" }}
+              </small>
+            </td>
+
+            <td>
+              {% if entry.kind == "emergency" %}
+                <span class="badge bg-danger">Emergency</span>
+              {% elif entry.kind == "appointment" %}
+                <span class="badge bg-info text-dark">Appointment</span>
+              {% else %}
+                <span class="badge bg-secondary">Walk-in</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if entry.status == "waiting" %}
+                <span class="badge bg-warning text-dark">Menunggu</span>
+              {% elif entry.status == "serving" %}
+                <span class="badge bg-success">Sedang Diperiksa</span>
+              {% else %}
+                <span class="badge bg-primary">Selesai</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {{ entry.created_at }}
+            </td>
+
+            <td class="text-end">
+
+              {% if entry.status == "waiting" and current_user.role in ["admin", "doctor"] %}
+              <form method="post" action="{{ url_for('doctor.call', queue_id=entry.id) }}" class="d-inline">
+                <button class="btn btn-success btn-sm">
+                  Panggil
+                </button>
+              </form>
+              {% endif %}
+
+              {% if entry.status == "serving" and current_user.role in ["admin", "doctor"] %}
+              <form method="post" action="{{ url_for('queue.finish', queue_id=entry.id) }}" class="d-inline">
+                <button class="btn btn-primary btn-sm">
+                  Selesai
+                </button>
+              </form>
+              {% endif %}
+
+              {% if current_user.role in ["admin", "receptionist"] %}
+              <button
+                class="btn btn-outline-danger btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#cancelQueueModal{{ entry.id }}"
+              >
+                Batal
+              </button>
+              {% endif %}
+
+            </td>
+          </tr>
+
+          {% if current_user.role in ["admin", "receptionist"] %}
+          <div class="modal fade" id="cancelQueueModal{{ entry.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <form method="post" action="{{ url_for('queue.cancel', queue_id=entry.id) }}">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Batalkan Antrian</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+
+                  <div class="modal-body">
+                    Apakah kamu yakin ingin membatalkan antrian
+                    <strong>{{ entry.number }}</strong>
+                    untuk pasien
+                    <strong>{{ entry.patient.name }}</strong>?
+                  </div>
+
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                      Tidak
+                    </button>
+                    <button class="btn btn-danger">
+                      Ya, Batalkan
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+      <div class="empty-icon mb-3">🧾</div>
+      <h5 class="fw-bold">Belum ada data antrian</h5>
+      <p class="text-muted">
+        Buat antrian dari halaman data pasien.
+      </p>
+      <a href="{{ url_for('patients.index') }}" class="btn btn-primary">
+        Ke Data Pasien
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
 {% endblock %}
