@@ -3,157 +3,180 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <h3 class="fw-bold mb-1">Data Pasien</h3>
+    <h3 class="fw-bold mb-1">Audit Log</h3>
     <p class="text-muted mb-0">
-      Kelola data pasien dan pembuatan nomor antrian.
+      Pantau seluruh aktivitas pengguna dalam sistem klinik.
     </p>
   </div>
+</div>
 
-  {% if current_user.role in ["admin", "receptionist"] %}
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPatientModal">
-    + Tambah Pasien
-  </button>
-  {% endif %}
+<div class="row g-4 mb-4">
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Total Aktivitas</p>
+        <h3 class="fw-bold mb-0">{{ stats.total_logs }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Login/Auth</p>
+        <h3 class="fw-bold mb-0">{{ stats.auth_logs }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Pasien</p>
+        <h3 class="fw-bold mb-0">{{ stats.patient_logs }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Antrian</p>
+        <h3 class="fw-bold mb-0">{{ stats.queue_logs }}</h3>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-body">
     <form method="get" class="row g-2 align-items-center">
-      <div class="col-md-10">
+
+      <div class="col-md-4">
         <input
           type="text"
           name="q"
           class="form-control"
-          placeholder="Cari pasien berdasarkan nama..."
+          placeholder="Cari berdasarkan aksi..."
           value="{{ keyword }}"
         >
       </div>
+
+      <div class="col-md-3">
+        <select name="module" class="form-select">
+          <option value="">Semua Module</option>
+          {% for module in modules %}
+            <option value="{{ module }}" {% if selected_module == module %}selected{% endif %}>
+              {{ module }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <select name="user_id" class="form-select">
+          <option value="">Semua User</option>
+          {% for user in users %}
+            <option value="{{ user.id }}" {% if selected_user_id|string == user.id|string %}selected{% endif %}>
+              {{ user.name }} - {{ user.role }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
       <div class="col-md-2 d-grid">
         <button class="btn btn-outline-primary">
-          Cari
+          Filter
         </button>
       </div>
+
     </form>
   </div>
 </div>
 
 <div class="card shadow-sm border-0">
   <div class="card-header bg-white border-0 pt-4 px-4">
-    <h5 class="fw-bold mb-0">Daftar Pasien</h5>
+    <h5 class="fw-bold mb-0">Riwayat Aktivitas</h5>
     <small class="text-muted">
-      Total data: {{ patients|length }} pasien
+      Menampilkan maksimal 300 aktivitas terbaru.
     </small>
   </div>
 
   <div class="card-body px-4">
 
-    {% if patients %}
+    {% if logs %}
     <div class="table-responsive">
       <table class="table table-hover align-middle">
         <thead>
           <tr>
-            <th>No. RM</th>
-            <th>Nama Pasien</th>
-            <th>Jenis Kelamin</th>
-            <th>Telepon</th>
-            <th>Alamat</th>
-            <th class="text-end">Aksi</th>
+            <th>Waktu</th>
+            <th>User</th>
+            <th>Role</th>
+            <th>Action</th>
+            <th>Module</th>
+            <th>IP Address</th>
+            <th>User Agent</th>
           </tr>
         </thead>
 
         <tbody>
-          {% for patient in patients %}
+          {% for log in logs %}
           <tr>
             <td>
-              <span class="badge bg-primary-subtle text-primary">
-                {{ patient.medical_record_number or "-" }}
+              <div class="fw-semibold">{{ log.timestamp }}</div>
+            </td>
+
+            <td>
+              {% if log.user %}
+                <div class="fw-semibold">{{ log.user.name }}</div>
+                <small class="text-muted">{{ log.user.email }}</small>
+              {% else %}
+                <span class="text-muted">Guest / Unknown</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if log.user %}
+                {% if log.user.role == "admin" %}
+                  <span class="badge bg-primary">Admin</span>
+                {% elif log.user.role == "doctor" %}
+                  <span class="badge bg-success">Doctor</span>
+                {% elif log.user.role == "receptionist" %}
+                  <span class="badge bg-info text-dark">Receptionist</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ log.user.role }}</span>
+                {% endif %}
+              {% else %}
+                <span class="badge bg-secondary">Unknown</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <span class="audit-action">
+                {{ log.action }}
               </span>
             </td>
 
             <td>
-              <div class="fw-semibold">{{ patient.name }}</div>
+              <span class="badge bg-light text-dark border">
+                {{ log.module or "-" }}
+              </span>
+            </td>
+
+            <td>
               <small class="text-muted">
-                {{ patient.birthdate or "Tanggal lahir belum diisi" }}
+                {{ log.ip_address or "-" }}
               </small>
             </td>
 
             <td>
-              {{ patient.gender or "-" }}
-            </td>
-
-            <td>
-              {{ patient.phone or "-" }}
-            </td>
-
-            <td>
-              <span class="text-muted">
-                {{ patient.address or "-" }}
-              </span>
-            </td>
-
-            <td class="text-end">
-
-              {% if current_user.role in ["admin", "receptionist"] %}
-              <form
-                method="post"
-                action="{{ url_for('queue.add', patient_id=patient.id) }}"
-                class="d-inline-block"
-              >
-                <div class="input-group input-group-sm">
-                  <select name="kind" class="form-select">
-                    <option value="walkin">Walk-in</option>
-                    <option value="appointment">Appointment</option>
-                    <option value="emergency">Emergency</option>
-                  </select>
-                  <button class="btn btn-primary">
-                    Buat Antrian
-                  </button>
-                </div>
-              </form>
-              {% endif %}
-
-              {% if current_user.role == "admin" %}
-              <button
-                class="btn btn-outline-danger btn-sm ms-1"
-                data-bs-toggle="modal"
-                data-bs-target="#deletePatientModal{{ patient.id }}"
-              >
-                Hapus
-              </button>
-              {% endif %}
-
+              <small class="text-muted audit-agent">
+                {{ log.user_agent or "-" }}
+              </small>
             </td>
           </tr>
-
-          {% if current_user.role == "admin" %}
-          <div class="modal fade" id="deletePatientModal{{ patient.id }}" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                <form method="post" action="{{ url_for('patients.delete', patient_id=patient.id) }}">
-                  <div class="modal-header">
-                    <h5 class="modal-title">Konfirmasi Hapus</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                  </div>
-
-                  <div class="modal-body">
-                    Apakah kamu yakin ingin menghapus pasien
-                    <strong>{{ patient.name }}</strong>?
-                  </div>
-
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
-                      Batal
-                    </button>
-                    <button class="btn btn-danger">
-                      Ya, Hapus
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-          {% endif %}
-
           {% endfor %}
         </tbody>
       </table>
@@ -161,108 +184,14 @@
 
     {% else %}
     <div class="text-center py-5">
-      <div class="empty-icon mb-3">👤</div>
-      <h5 class="fw-bold">Belum ada data pasien</h5>
+      <div class="empty-icon mb-3">🛡️</div>
+      <h5 class="fw-bold">Belum ada audit log</h5>
       <p class="text-muted">
-        Tambahkan pasien pertama untuk mulai membuat antrian.
+        Aktivitas user akan otomatis tercatat setelah sistem digunakan.
       </p>
-
-      {% if current_user.role in ["admin", "receptionist"] %}
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPatientModal">
-        + Tambah Pasien
-      </button>
-      {% endif %}
     </div>
     {% endif %}
 
-  </div>
-</div>
-
-
-<!-- Modal Tambah Pasien -->
-<div class="modal fade" id="createPatientModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-
-      <form method="post" action="{{ url_for('patients.create') }}">
-        <div class="modal-header">
-          <div>
-            <h5 class="modal-title fw-bold">Tambah Pasien Baru</h5>
-            <small class="text-muted">
-              Isi data dasar pasien untuk pendaftaran awal.
-            </small>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-
-        <div class="modal-body">
-
-          <div class="row g-3">
-
-            <div class="col-md-6">
-              <label class="form-label">Nama Pasien</label>
-              <input
-                type="text"
-                name="name"
-                class="form-control"
-                placeholder="Masukkan nama pasien"
-                required
-              >
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">Tanggal Lahir</label>
-              <input
-                type="date"
-                name="birthdate"
-                class="form-control"
-              >
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">Jenis Kelamin</label>
-              <select name="gender" class="form-select">
-                <option value="">Pilih jenis kelamin</option>
-                <option value="Laki-laki">Laki-laki</option>
-                <option value="Perempuan">Perempuan</option>
-              </select>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">Nomor Telepon</label>
-              <input
-                type="text"
-                name="phone"
-                class="form-control"
-                placeholder="Masukkan nomor telepon"
-              >
-            </div>
-
-            <div class="col-12">
-              <label class="form-label">Alamat</label>
-              <textarea
-                name="address"
-                class="form-control"
-                rows="3"
-                placeholder="Masukkan alamat pasien"
-              ></textarea>
-            </div>
-
-          </div>
-
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
-            Batal
-          </button>
-          <button class="btn btn-primary">
-            Simpan Pasien
-          </button>
-        </div>
-      </form>
-
-    </div>
   </div>
 </div>
 

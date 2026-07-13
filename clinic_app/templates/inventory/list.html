@@ -1,17 +1,478 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between mb-3"><h3>Stok Obat</h3><button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createMed">+ Obat</button></div>
-<table class="table table-striped"><thead><tr><th>Nama</th><th>Unit</th><th>Kategori</th><th>Stok</th></tr></thead><tbody>
-{% for m in medicines %}<tr><td>{{ m.name }}</td><td>{{ m.unit }}</td><td>{{ m.category }}</td><td>{{ m.stock }}</td></tr>{% endfor %}
-</tbody></table>
-<div class="modal fade" id="createMed"><div class="modal-dialog"><div class="modal-content"><form method="post" action="{{ url_for('inventory.create') }}">
-<div class="modal-header"><h5>Tambah Obat</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-<div class="modal-body">
-<input class="form-control mb-2" name="name" placeholder="Nama obat" required>
-<input class="form-control mb-2" name="unit" placeholder="Unit" required>
-<input class="form-control mb-2" name="category" placeholder="Kategori">
-<input class="form-control mb-2" name="stock" type="number" placeholder="Stok" value="0">
-<textarea class="form-control" name="description" placeholder="Deskripsi"></textarea>
-</div><div class="modal-footer"><button class="btn btn-success">Simpan</button></div>
-</form></div></div></div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">Inventori Obat</h3>
+    <p class="text-muted mb-0">
+      Kelola data obat, stok, dan proses stock opname klinik.
+    </p>
+  </div>
+
+  {% if current_user.role == "admin" %}
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMedicineModal">
+    + Tambah Obat
+  </button>
+  {% endif %}
+</div>
+
+<div class="row g-4 mb-4">
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Total Jenis Obat</p>
+        <h3 class="fw-bold mb-0">{{ stats.total_medicines }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Total Stok</p>
+        <h3 class="fw-bold mb-0">{{ stats.total_stock }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Stok Rendah</p>
+        <h3 class="fw-bold mb-0 text-warning">{{ stats.low_stock }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Stok Habis</p>
+        <h3 class="fw-bold mb-0 text-danger">{{ stats.empty_stock }}</h3>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-center">
+
+      <div class="col-md-7">
+        <input
+          type="text"
+          name="q"
+          class="form-control"
+          placeholder="Cari obat berdasarkan nama..."
+          value="{{ keyword }}"
+        >
+      </div>
+
+      <div class="col-md-3">
+        <select name="stock_status" class="form-select">
+          <option value="">Semua Stok</option>
+          <option value="safe" {% if selected_stock_status == "safe" %}selected{% endif %}>
+            Stok Aman
+          </option>
+          <option value="low" {% if selected_stock_status == "low" %}selected{% endif %}>
+            Stok Rendah
+          </option>
+          <option value="empty" {% if selected_stock_status == "empty" %}selected{% endif %}>
+            Stok Habis
+          </option>
+        </select>
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-outline-primary">
+          Filter
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-0 pt-4 px-4">
+    <h5 class="fw-bold mb-0">Daftar Obat</h5>
+    <small class="text-muted">
+      Total data ditampilkan: {{ medicines|length }} obat
+    </small>
+  </div>
+
+  <div class="card-body px-4">
+
+    {% if medicines %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Nama Obat</th>
+            <th>Kategori</th>
+            <th>Unit</th>
+            <th>Stok</th>
+            <th>Status</th>
+            <th>Deskripsi</th>
+            <th class="text-end">Aksi</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for medicine in medicines %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ medicine.name }}</div>
+            </td>
+
+            <td>
+              {{ medicine.category or "-" }}
+            </td>
+
+            <td>
+              {{ medicine.unit }}
+            </td>
+
+            <td>
+              <span class="fw-bold">
+                {{ medicine.stock }}
+              </span>
+              <small class="text-muted">{{ medicine.unit }}</small>
+            </td>
+
+            <td>
+              {% if medicine.stock <= 0 %}
+                <span class="badge bg-danger">Habis</span>
+              {% elif medicine.stock <= 10 %}
+                <span class="badge bg-warning text-dark">Stok Rendah</span>
+              {% else %}
+                <span class="badge bg-success">Aman</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <span class="text-muted">
+                {{ medicine.description or "-" }}
+              </span>
+            </td>
+
+            <td class="text-end">
+
+              <button
+                class="btn btn-outline-primary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#stockModal{{ medicine.id }}"
+              >
+                Stock Opname
+              </button>
+
+              {% if current_user.role == "admin" %}
+              <button
+                class="btn btn-outline-secondary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#editMedicineModal{{ medicine.id }}"
+              >
+                Edit
+              </button>
+
+              <button
+                class="btn btn-outline-danger btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteMedicineModal{{ medicine.id }}"
+              >
+                Hapus
+              </button>
+              {% endif %}
+
+            </td>
+          </tr>
+
+          <!-- Modal Stock Opname -->
+          <div class="modal fade" id="stockModal{{ medicine.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+
+                <form method="post" action="{{ url_for('inventory.adjust_stock', medicine_id=medicine.id) }}">
+                  <div class="modal-header">
+                    <div>
+                      <h5 class="modal-title fw-bold">Stock Opname</h5>
+                      <small class="text-muted">{{ medicine.name }}</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+
+                  <div class="modal-body">
+
+                    <div class="alert alert-light border">
+                      Stok saat ini:
+                      <strong>{{ medicine.stock }} {{ medicine.unit }}</strong>
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">Jenis Penyesuaian</label>
+                      <select name="adjustment_type" class="form-select" required>
+                        <option value="in">Stok Masuk</option>
+                        <option value="out">Stok Keluar</option>
+                      </select>
+                    </div>
+
+                    <div class="mb-0">
+                      <label class="form-label">Jumlah</label>
+                      <input
+                        type="number"
+                        name="qty"
+                        class="form-control"
+                        min="1"
+                        placeholder="Masukkan jumlah"
+                        required
+                      >
+                    </div>
+
+                  </div>
+
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                      Batal
+                    </button>
+                    <button class="btn btn-primary">
+                      Simpan Perubahan Stok
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+          </div>
+
+          {% if current_user.role == "admin" %}
+          <!-- Modal Edit Obat -->
+          <div class="modal fade" id="editMedicineModal{{ medicine.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+
+                <form method="post" action="{{ url_for('inventory.update', medicine_id=medicine.id) }}">
+                  <div class="modal-header">
+                    <div>
+                      <h5 class="modal-title fw-bold">Edit Obat</h5>
+                      <small class="text-muted">Perbarui informasi data obat.</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+
+                  <div class="modal-body">
+                    <div class="row g-3">
+
+                      <div class="col-md-6">
+                        <label class="form-label">Nama Obat</label>
+                        <input
+                          type="text"
+                          name="name"
+                          class="form-control"
+                          value="{{ medicine.name }}"
+                          required
+                        >
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label">Unit</label>
+                        <input
+                          type="text"
+                          name="unit"
+                          class="form-control"
+                          value="{{ medicine.unit }}"
+                          required
+                        >
+                      </div>
+
+                      <div class="col-md-12">
+                        <label class="form-label">Kategori</label>
+                        <input
+                          type="text"
+                          name="category"
+                          class="form-control"
+                          value="{{ medicine.category or '' }}"
+                        >
+                      </div>
+
+                      <div class="col-md-12">
+                        <label class="form-label">Deskripsi</label>
+                        <textarea
+                          name="description"
+                          class="form-control"
+                          rows="3"
+                        >{{ medicine.description or '' }}</textarea>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                      Batal
+                    </button>
+                    <button class="btn btn-primary">
+                      Simpan Perubahan
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Delete Obat -->
+          <div class="modal fade" id="deleteMedicineModal{{ medicine.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+
+                <form method="post" action="{{ url_for('inventory.delete', medicine_id=medicine.id) }}">
+                  <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Konfirmasi Hapus</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+
+                  <div class="modal-body">
+                    Apakah kamu yakin ingin menghapus obat
+                    <strong>{{ medicine.name }}</strong>?
+                    <br>
+                    <small class="text-muted">
+                      Obat yang sudah pernah digunakan dalam resep tidak dapat dihapus.
+                    </small>
+                  </div>
+
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                      Batal
+                    </button>
+                    <button class="btn btn-danger">
+                      Ya, Hapus
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+      <div class="empty-icon mb-3">💊</div>
+      <h5 class="fw-bold">Belum ada data obat</h5>
+      <p class="text-muted">
+        Tambahkan data obat untuk mulai mengelola stok klinik.
+      </p>
+
+      {% if current_user.role == "admin" %}
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMedicineModal">
+        + Tambah Obat
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- Modal Tambah Obat -->
+{% if current_user.role == "admin" %}
+<div class="modal fade" id="createMedicineModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+
+      <form method="post" action="{{ url_for('inventory.create') }}">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title fw-bold">Tambah Obat Baru</h5>
+            <small class="text-muted">
+              Isi data obat yang tersedia di klinik.
+            </small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label">Nama Obat</label>
+              <input
+                type="text"
+                name="name"
+                class="form-control"
+                placeholder="Contoh: Paracetamol"
+                required
+              >
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Unit</label>
+              <input
+                type="text"
+                name="unit"
+                class="form-control"
+                placeholder="tablet / kapsul / botol"
+                required
+              >
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Kategori</label>
+              <input
+                type="text"
+                name="category"
+                class="form-control"
+                placeholder="Antibiotik / Vitamin / Analgesik"
+              >
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Stok Awal</label>
+              <input
+                type="number"
+                name="stock"
+                class="form-control"
+                min="0"
+                value="0"
+                required
+              >
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Deskripsi</label>
+              <textarea
+                name="description"
+                class="form-control"
+                rows="3"
+                placeholder="Masukkan catatan atau deskripsi obat"
+              ></textarea>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            Batal
+          </button>
+          <button class="btn btn-primary">
+            Simpan Obat
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

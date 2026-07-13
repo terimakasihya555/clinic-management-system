@@ -326,3 +326,31 @@ body {
 .medicine-item:last-child {
   border-bottom: none;
 }
+
+.badge {
+  border-radius: 999px;
+  padding: 7px 10px;
+}
+
+.modal-content {
+  border-radius: 20px;
+  border: none;
+}
+
+.modal-header,
+.modal-footer {
+  border-color: #e5e7eb;
+}
+
+.audit-action {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.audit-agent {
+  display: inline-block;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
