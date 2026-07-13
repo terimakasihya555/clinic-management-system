@@ -1,9 +1,130 @@
 {% extends "layout.html" %}
 {% block content %}
-<h3>Dashboard Dokter</h3>
-<table class="table table-striped"><thead><tr><th>Nomor</th><th>Pasien</th><th>Aksi</th></tr></thead><tbody>
-{% for q in queue %}
-<tr><td>{{ q.number }}</td><td>{{ q.patient.name }}</td><td><form method="post" action="{{ url_for('doctor.call', queue_id=q.id) }}"><button class="btn btn-primary btn-sm">Panggil</button></form></td></tr>
-{% endfor %}
-</tbody></table>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">Dashboard Dokter</h3>
+    <p class="text-muted mb-0">
+      Kelola pasien yang sedang menunggu pemeriksaan.
+    </p>
+  </div>
+
+  <a href="{{ url_for('queue.display') }}" target="_blank" class="btn btn-outline-primary">
+    Buka Monitor Antrian
+  </a>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Pasien Menunggu</p>
+        <h3 class="fw-bold mb-0">{{ queue|length }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Prioritas Emergency</p>
+        <h3 class="fw-bold mb-0">
+          {{ queue|selectattr("kind", "equalto", "emergency")|list|length }}
+        </h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="text-muted mb-1">Status Modul</p>
+        <h5 class="fw-bold mb-0 text-success">Aktif</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-0 pt-4 px-4">
+    <h5 class="fw-bold mb-0">Daftar Pasien Menunggu</h5>
+    <small class="text-muted">
+      Pasien ditampilkan berdasarkan prioritas dan waktu kedatangan.
+    </small>
+  </div>
+
+  <div class="card-body px-4">
+
+    {% if queue %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Nomor</th>
+            <th>Pasien</th>
+            <th>Jenis</th>
+            <th>Waktu Masuk</th>
+            <th class="text-end">Aksi</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for q in queue %}
+          <tr>
+            <td>
+              <span class="queue-number {% if q.kind == 'emergency' %}queue-emergency{% endif %}">
+                {{ q.number }}
+              </span>
+            </td>
+
+            <td>
+              <div class="fw-semibold">{{ q.patient.name }}</div>
+              <small class="text-muted">
+                {{ q.patient.medical_record_number or "-" }}
+              </small>
+            </td>
+
+            <td>
+              {% if q.kind == "emergency" %}
+                <span class="badge bg-danger">Emergency</span>
+              {% elif q.kind == "appointment" %}
+                <span class="badge bg-info text-dark">Appointment</span>
+              {% else %}
+                <span class="badge bg-secondary">Walk-in</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {{ q.created_at }}
+            </td>
+
+            <td class="text-end">
+              <form method="post" action="{{ url_for('doctor.call', queue_id=q.id) }}" class="d-inline">
+                <button class="btn btn-success btn-sm">
+                  Panggil & Periksa
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+      <div class="empty-icon mb-3">🩺</div>
+      <h5 class="fw-bold">Tidak ada pasien menunggu</h5>
+      <p class="text-muted">
+        Pasien yang dibuatkan antrian akan muncul di halaman ini.
+      </p>
+      <a href="{{ url_for('queue.index') }}" class="btn btn-outline-primary">
+        Lihat Manajemen Antrian
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
 {% endblock %}

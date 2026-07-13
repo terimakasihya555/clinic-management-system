@@ -288,3 +288,41 @@ body {
   background: #fee2e2;
   color: #dc2626;
 }
+
+.patient-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.patient-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: #0d6efd;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.medicine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.medicine-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.medicine-item:last-child {
+  border-bottom: none;
+}
