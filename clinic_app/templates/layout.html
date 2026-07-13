@@ -36,7 +36,7 @@
     <nav class="sidebar-menu">
 
       {% if current_user.role == "admin" %}
-        <a href="{{ url_for('inventory.index') }}" class="menu-link">
+        <a href="{{ url_for('dashboard') }}" class="menu-link">
           <span>📊</span> Dashboard
         </a>
         <a href="{{ url_for('patients.index') }}" class="menu-link">
@@ -57,6 +57,9 @@
       {% endif %}
 
       {% if current_user.role == "receptionist" %}
+        <a href="{{ url_for('dashboard') }}" class="menu-link">
+          <span>📊</span> Dashboard
+        </a>
         <a href="{{ url_for('patients.index') }}" class="menu-link">
           <span>👤</span> Pasien
         </a>
@@ -69,6 +72,9 @@
       {% endif %}
 
       {% if current_user.role == "doctor" %}
+        <a href="{{ url_for('dashboard') }}" class="menu-link">
+          <span>📊</span> Dashboard
+        </a>
         <a href="{{ url_for('doctor.dashboard') }}" class="menu-link">
           <span>🩺</span> Dashboard Dokter
         </a>

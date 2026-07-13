@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">Dashboard</h3>
+    <p class="text-muted mb-0">
+      Ringkasan aktivitas operasional klinik
+    </p>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0 dashboard-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Total Pasien</p>
+            <h3 class="fw-bold mb-0">{{ stats.total_patients }}</h3>
+          </div>
+          <div class="dashboard-icon bg-primary-subtle text-primary">
+            👤
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0 dashboard-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Antrian Menunggu</p>
+            <h3 class="fw-bold mb-0">{{ stats.waiting_queue }}</h3>
+          </div>
+          <div class="dashboard-icon bg-warning-subtle text-warning">
+            🧾
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0 dashboard-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Sedang Diperiksa</p>
+            <h3 class="fw-bold mb-0">{{ stats.serving_queue }}</h3>
+          </div>
+          <div class="dashboard-icon bg-success-subtle text-success">
+            🩺
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0 dashboard-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Obat Stok Rendah</p>
+            <h3 class="fw-bold mb-0">{{ stats.low_stock }}</h3>
+          </div>
+          <div class="dashboard-icon bg-danger-subtle text-danger">
+            💊
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="row g-4">
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0">Aktivitas Terbaru</h5>
+        <small class="text-muted">Log aktivitas terakhir pengguna</small>
+      </div>
+
+      <div class="card-body px-4">
+        {% if recent_logs %}
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>User</th>
+                  <th>Aksi</th>
+                  <th>Module</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in recent_logs %}
+                <tr>
+                  <td>{{ log.timestamp }}</td>
+                  <td>{{ log.user.name if log.user else "-" }}</td>
+                  <td>{{ log.action }}</td>
+                  <td>{{ log.module }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">Belum ada aktivitas.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0">Quick Action</h5>
+        <small class="text-muted">Akses cepat modul utama</small>
+      </div>
+
+      <div class="card-body px-4 d-grid gap-2">
+        <a href="{{ url_for('patients.index') }}" class="btn btn-primary">
+          Kelola Pasien
+        </a>
+
+        <a href="{{ url_for('queue.index') }}" class="btn btn-outline-primary">
+          Lihat Antrian
+        </a>
+
+        {% if current_user.role in ["admin", "receptionist"] %}
+        <a href="{{ url_for('inventory.index') }}" class="btn btn-outline-primary">
+          Cek Stok Obat
+        </a>
+        {% endif %}
+
+        {% if current_user.role == "admin" %}
+        <a href="{{ url_for('audit.index') }}" class="btn btn-outline-secondary">
+          Audit Log
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
