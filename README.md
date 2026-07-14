@@ -268,6 +268,7 @@ Additional documentation is available in the `docs` folder:
 - `SYSTEM_FEATURE_SUMMARY.md` — explains the main modules and system benefits.
 - `SECURITY_IMPLEMENTATION.md` — explains the implemented security mechanisms.
 - `DEPLOYMENT_GUIDE.md` — explains how to run and deploy the system.
+- `DEMO_DATA_GUIDE.md` — explains how to create sample data for demo.
 
 ## 9. Security Notes
 
