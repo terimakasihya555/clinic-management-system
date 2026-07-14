@@ -267,6 +267,7 @@ Additional documentation is available in the `docs` folder:
 - `TEST_CASES.md` — summarizes manual and automated test scenarios.
 - `SYSTEM_FEATURE_SUMMARY.md` — explains the main modules and system benefits.
 - `SECURITY_IMPLEMENTATION.md` — explains the implemented security mechanisms.
+- `DEPLOYMENT_GUIDE.md` — explains how to run and deploy the system.
 
 ## 9. Security Notes
 
