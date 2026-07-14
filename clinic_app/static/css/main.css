@@ -366,3 +366,60 @@ body {
   justify-content: center;
   font-weight: 800;
 }
+
+.medical-info-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.medical-info-item:last-child {
+  border-bottom: none;
+}
+
+.medical-timeline {
+  position: relative;
+  padding-left: 28px;
+}
+
+.medical-timeline::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: #dbeafe;
+}
+
+.medical-timeline-item {
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.medical-timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.medical-timeline-dot {
+  position: absolute;
+  left: -27px;
+  top: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #0d6efd;
+  border: 4px solid #dbeafe;
+}
+
+.medical-timeline-content {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.medical-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}

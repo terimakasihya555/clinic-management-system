@@ -1,0 +1,215 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">Riwayat Rekam Medis</h3>
+    <p class="text-muted mb-0">
+      Riwayat kunjungan, diagnosis, catatan dokter, dan resep pasien.
+    </p>
+  </div>
+
+  <a href="{{ url_for('patients.index') }}" class="btn btn-outline-secondary">
+    Kembali ke Data Pasien
+  </a>
+</div>
+
+<div class="row g-4 mb-4">
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0">Informasi Pasien</h5>
+        <small class="text-muted">Data dasar pasien</small>
+      </div>
+
+      <div class="card-body px-4">
+        <div class="patient-profile mb-4">
+          <div class="patient-avatar">
+            {{ patient.name[0] }}
+          </div>
+
+          <div>
+            <h5 class="fw-bold mb-1">{{ patient.name }}</h5>
+            <p class="text-muted mb-0">
+              {{ patient.medical_record_number or "-" }}
+            </p>
+          </div>
+        </div>
+
+        <div class="medical-info-item">
+          <small class="text-muted">Jenis Kelamin</small>
+          <div class="fw-semibold">{{ patient.gender or "-" }}</div>
+        </div>
+
+        <div class="medical-info-item">
+          <small class="text-muted">Tanggal Lahir</small>
+          <div class="fw-semibold">{{ patient.birthdate or "-" }}</div>
+        </div>
+
+        <div class="medical-info-item">
+          <small class="text-muted">Telepon</small>
+          <div class="fw-semibold">{{ patient.phone or "-" }}</div>
+        </div>
+
+        <div class="medical-info-item">
+          <small class="text-muted">Alamat</small>
+          <div class="fw-semibold">{{ patient.address or "-" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="row g-4">
+
+      <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <p class="text-muted mb-1">Total Kunjungan</p>
+            <h3 class="fw-bold mb-0">{{ stats.total_visits }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <p class="text-muted mb-1">Total Resep</p>
+            <h3 class="fw-bold mb-0">{{ stats.total_prescriptions }}</h3>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4">
+      <div class="card-header bg-white border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0">Timeline Kunjungan</h5>
+        <small class="text-muted">
+          Daftar riwayat pemeriksaan pasien dari yang terbaru.
+        </small>
+      </div>
+
+      <div class="card-body px-4">
+
+        {% if visit_records %}
+          <div class="medical-timeline">
+
+            {% for record in visit_records %}
+            <div class="medical-timeline-item">
+
+              <div class="medical-timeline-dot"></div>
+
+              <div class="medical-timeline-content">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <h5 class="fw-bold mb-1">
+                      Kunjungan {{ record.visit.created_at }}
+                    </h5>
+
+                    <small class="text-muted">
+                      Dokter:
+                      {% if record.doctor %}
+                        {{ record.doctor.name }}
+                      {% else %}
+                        -
+                      {% endif %}
+                    </small>
+                  </div>
+
+                  <span class="badge bg-success">
+                    Selesai
+                  </span>
+                </div>
+
+                <div class="medical-section">
+                  <small class="text-muted">Diagnosis</small>
+                  <p class="mb-0">
+                    {{ record.visit.diagnosis or "-" }}
+                  </p>
+                </div>
+
+                <div class="medical-section">
+                  <small class="text-muted">Catatan Pemeriksaan</small>
+                  <p class="mb-0">
+                    {{ record.visit.notes or "-" }}
+                  </p>
+                </div>
+
+                <div class="medical-section mb-0">
+                  <small class="text-muted">Resep Obat</small>
+
+                  {% if record.prescription_items %}
+                    <div class="table-responsive mt-2">
+                      <table class="table table-sm align-middle">
+                        <thead>
+                          <tr>
+                            <th>Obat</th>
+                            <th>Kategori</th>
+                            <th>Jumlah</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {% for item in record.prescription_items %}
+                          <tr>
+                            <td>
+                              {% if item.medicine %}
+                                {{ item.medicine.name }}
+                              {% else %}
+                                Obat tidak ditemukan
+                              {% endif %}
+                            </td>
+
+                            <td>
+                              {% if item.medicine %}
+                                {{ item.medicine.category or "-" }}
+                              {% else %}
+                                -
+                              {% endif %}
+                            </td>
+
+                            <td>
+                              <span class="badge bg-primary">
+                                {{ item.qty }}
+                                {% if item.medicine %}
+                                  {{ item.medicine.unit }}
+                                {% endif %}
+                              </span>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  {% else %}
+                    <p class="text-muted mb-0 mt-1">
+                      Tidak ada resep obat.
+                    </p>
+                  {% endif %}
+                </div>
+
+              </div>
+            </div>
+            {% endfor %}
+
+          </div>
+
+        {% else %}
+          <div class="text-center py-5">
+            <div class="empty-icon mb-3">📋</div>
+            <h5 class="fw-bold">Belum ada rekam medis</h5>
+            <p class="text-muted">
+              Riwayat pemeriksaan akan muncul setelah dokter menyimpan pemeriksaan pasien.
+            </p>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

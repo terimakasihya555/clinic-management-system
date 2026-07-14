@@ -1,36 +1,285 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between mb-3">
-  <h3>Data Pasien</h3>
-  <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createPatient">+ Pasien</button>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold mb-1">Data Pasien</h3>
+    <p class="text-muted mb-0">
+      Kelola data pasien, antrian, dan akses rekam medis.
+    </p>
+  </div>
+
+  {% if current_user.role in ["admin", "receptionist"] %}
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPatientModal">
+    + Tambah Pasien
+  </button>
+  {% endif %}
 </div>
-<table class="table table-striped table-hover">
-  <thead><tr><th>RM</th><th>Nama</th><th>Telepon</th><th>Aksi</th></tr></thead>
-  <tbody>
-  {% for p in patients %}
-  <tr>
-    <td>{{ p.medical_record_number }}</td><td>{{ p.name }}</td><td>{{ p.phone }}</td>
-    <td>
-      <form class="d-inline" method="post" action="{{ url_for('queue.add', patient_id=p.id) }}">
-        <select name="kind" class="form-select form-select-sm d-inline w-auto">
-          <option value="walkin">Datang langsung</option><option value="appointment">Janji temu</option><option value="emergency">Darurat</option>
-        </select>
-        <button class="btn btn-primary btn-sm">Buat Antrian</button>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-10">
+        <input
+          type="text"
+          name="q"
+          class="form-control"
+          placeholder="Cari pasien berdasarkan nama..."
+          value="{{ keyword }}"
+        >
+      </div>
+
+      <div class="col-md-2 d-grid">
+        <button class="btn btn-outline-primary">
+          Cari
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white border-0 pt-4 px-4">
+    <h5 class="fw-bold mb-0">Daftar Pasien</h5>
+    <small class="text-muted">
+      Total data: {{ patients|length }} pasien
+    </small>
+  </div>
+
+  <div class="card-body px-4">
+
+    {% if patients %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>No. RM</th>
+            <th>Nama Pasien</th>
+            <th>Jenis Kelamin</th>
+            <th>Telepon</th>
+            <th>Alamat</th>
+            <th class="text-end">Aksi</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for patient in patients %}
+          <tr>
+            <td>
+              <span class="badge bg-primary-subtle text-primary">
+                {{ patient.medical_record_number or "-" }}
+              </span>
+            </td>
+
+            <td>
+              <div class="fw-semibold">{{ patient.name }}</div>
+              <small class="text-muted">
+                {{ patient.birthdate or "Tanggal lahir belum diisi" }}
+              </small>
+            </td>
+
+            <td>
+              {{ patient.gender or "-" }}
+            </td>
+
+            <td>
+              {{ patient.phone or "-" }}
+            </td>
+
+            <td>
+              <span class="text-muted">
+                {{ patient.address or "-" }}
+              </span>
+            </td>
+
+            <td class="text-end">
+
+              {% if current_user.role in ["admin", "doctor"] %}
+              <a
+                href="{{ url_for('patients.medical_record', patient_id=patient.id) }}"
+                class="btn btn-outline-primary btn-sm mb-1"
+              >
+                Rekam Medis
+              </a>
+              {% endif %}
+
+              {% if current_user.role in ["admin", "receptionist"] %}
+              <form
+                method="post"
+                action="{{ url_for('queue.add', patient_id=patient.id) }}"
+                class="d-inline-block mb-1"
+              >
+                <div class="input-group input-group-sm">
+                  <select name="kind" class="form-select">
+                    <option value="walkin">Walk-in</option>
+                    <option value="appointment">Appointment</option>
+                    <option value="emergency">Emergency</option>
+                  </select>
+                  <button class="btn btn-primary">
+                    Buat Antrian
+                  </button>
+                </div>
+              </form>
+              {% endif %}
+
+              {% if current_user.role == "admin" %}
+              <button
+                class="btn btn-outline-danger btn-sm mb-1"
+                data-bs-toggle="modal"
+                data-bs-target="#deletePatientModal{{ patient.id }}"
+              >
+                Hapus
+              </button>
+              {% endif %}
+
+            </td>
+          </tr>
+
+          {% if current_user.role == "admin" %}
+          <div class="modal fade" id="deletePatientModal{{ patient.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <form method="post" action="{{ url_for('patients.delete', patient_id=patient.id) }}">
+                  <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Konfirmasi Hapus</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+
+                  <div class="modal-body">
+                    Apakah kamu yakin ingin menghapus pasien
+                    <strong>{{ patient.name }}</strong>?
+                    <br>
+                    <small class="text-muted">
+                      Pasien yang sudah memiliki antrian atau rekam medis tidak dapat dihapus.
+                    </small>
+                  </div>
+
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                      Batal
+                    </button>
+                    <button class="btn btn-danger">
+                      Ya, Hapus
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+      <div class="empty-icon mb-3">👤</div>
+      <h5 class="fw-bold">Belum ada data pasien</h5>
+      <p class="text-muted">
+        Tambahkan pasien pertama untuk mulai membuat antrian.
+      </p>
+
+      {% if current_user.role in ["admin", "receptionist"] %}
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPatientModal">
+        + Tambah Pasien
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- Modal Tambah Pasien -->
+{% if current_user.role in ["admin", "receptionist"] %}
+<div class="modal fade" id="createPatientModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+
+      <form method="post" action="{{ url_for('patients.create') }}">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title fw-bold">Tambah Pasien Baru</h5>
+            <small class="text-muted">
+              Isi data dasar pasien untuk pendaftaran awal.
+            </small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label">Nama Pasien</label>
+              <input
+                type="text"
+                name="name"
+                class="form-control"
+                placeholder="Masukkan nama pasien"
+                required
+              >
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Tanggal Lahir</label>
+              <input
+                type="date"
+                name="birthdate"
+                class="form-control"
+              >
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Jenis Kelamin</label>
+              <select name="gender" class="form-select">
+                <option value="">Pilih jenis kelamin</option>
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Nomor Telepon</label>
+              <input
+                type="text"
+                name="phone"
+                class="form-control"
+                placeholder="Masukkan nomor telepon"
+              >
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Alamat</label>
+              <textarea
+                name="address"
+                class="form-control"
+                rows="3"
+                placeholder="Masukkan alamat pasien"
+              ></textarea>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            Batal
+          </button>
+          <button class="btn btn-primary">
+            Simpan Pasien
+          </button>
+        </div>
       </form>
-    </td>
-  </tr>
-  {% endfor %}
-  </tbody>
-</table>
-<div class="modal fade" id="createPatient"><div class="modal-dialog"><div class="modal-content">
-<form method="post" action="{{ url_for('patients.create') }}">
-<div class="modal-header"><h5>Tambah Pasien</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-<div class="modal-body">
-<input class="form-control mb-2" name="name" placeholder="Nama" required>
-<input class="form-control mb-2" name="birthdate" type="date">
-<select class="form-select mb-2" name="gender"><option>Laki-laki</option><option>Perempuan</option></select>
-<input class="form-control mb-2" name="phone" placeholder="Telepon">
-<textarea class="form-control" name="address" placeholder="Alamat"></textarea>
-</div><div class="modal-footer"><button class="btn btn-success">Simpan</button></div>
-</form></div></div></div>
+
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
