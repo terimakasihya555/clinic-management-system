@@ -9,9 +9,21 @@
     </p>
   </div>
 
-  <a href="{{ url_for('patients.index') }}" class="btn btn-outline-secondary">
-    Kembali ke Data Pasien
-  </a>
+  <div class="d-flex gap-2 no-print">
+    <button onclick="window.print()" class="btn btn-primary">
+      Print Rekam Medis
+    </button>
+
+    <a href="{{ url_for('patients.index') }}" class="btn btn-outline-secondary">
+      Kembali ke Data Pasien
+    </a>
+  </div>
+</div>
+
+<div class="medical-print-header">
+  <h2>Clinic Management System</h2>
+  <p>Riwayat Rekam Medis Pasien</p>
+  <hr>
 </div>
 
 <div class="row g-4 mb-4">

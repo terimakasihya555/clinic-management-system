@@ -67,6 +67,34 @@ def create():
     return redirect(url_for("patients.index"))
 
 
+@patients_bp.route("/update/<int:patient_id>", methods=["POST"])
+@login_required
+@role_required("admin", "receptionist")
+def update(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+
+    name = request.form.get("name", "").strip()
+    birthdate = request.form.get("birthdate")
+    gender = request.form.get("gender")
+    phone = request.form.get("phone")
+    address = request.form.get("address")
+
+    if not name:
+        flash("Nama pasien wajib diisi.", "danger")
+        return redirect(url_for("patients.index"))
+
+    patient.name = name
+    patient.birthdate = birthdate
+    patient.gender = gender
+    patient.phone = phone
+    patient.address = address
+
+    db.session.commit()
+
+    flash("Data pasien berhasil diperbarui.", "success")
+    return redirect(url_for("patients.index"))
+
+
 @patients_bp.route("/medical-record/<int:patient_id>")
 @login_required
 @role_required("admin", "doctor")

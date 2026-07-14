@@ -104,6 +104,16 @@
               {% endif %}
 
               {% if current_user.role in ["admin", "receptionist"] %}
+              <button
+                class="btn btn-outline-secondary btn-sm mb-1"
+                data-bs-toggle="modal"
+                data-bs-target="#editPatientModal{{ patient.id }}"
+              >
+                Edit
+              </button>
+              {% endif %}
+
+              {% if current_user.role in ["admin", "receptionist"] %}
               <form
                 method="post"
                 action="{{ url_for('queue.add', patient_id=patient.id) }}"
@@ -134,6 +144,96 @@
 
             </td>
           </tr>
+
+          {% if current_user.role in ["admin", "receptionist"] %}
+          <div class="modal fade" id="editPatientModal{{ patient.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+
+                <form method="post" action="{{ url_for('patients.update', patient_id=patient.id) }}">
+                  <div class="modal-header">
+                    <div>
+                      <h5 class="modal-title fw-bold">Edit Data Pasien</h5>
+                      <small class="text-muted">
+                        Perbarui data dasar pasien.
+                      </small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+
+                  <div class="modal-body">
+                    <div class="row g-3">
+
+                      <div class="col-md-6">
+                        <label class="form-label">Nama Pasien</label>
+                        <input
+                          type="text"
+                          name="name"
+                          class="form-control"
+                          value="{{ patient.name }}"
+                          required
+                        >
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label">Tanggal Lahir</label>
+                        <input
+                          type="date"
+                          name="birthdate"
+                          class="form-control"
+                          value="{{ patient.birthdate or '' }}"
+                        >
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label">Jenis Kelamin</label>
+                        <select name="gender" class="form-select">
+                          <option value="">Pilih jenis kelamin</option>
+                          <option value="Laki-laki" {% if patient.gender == "Laki-laki" %}selected{% endif %}>
+                            Laki-laki
+                          </option>
+                          <option value="Perempuan" {% if patient.gender == "Perempuan" %}selected{% endif %}>
+                            Perempuan
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="col-md-6">
+                        <label class="form-label">Nomor Telepon</label>
+                        <input
+                          type="text"
+                          name="phone"
+                          class="form-control"
+                          value="{{ patient.phone or '' }}"
+                        >
+                      </div>
+
+                      <div class="col-12">
+                        <label class="form-label">Alamat</label>
+                        <textarea
+                          name="address"
+                          class="form-control"
+                          rows="3"
+                        >{{ patient.address or '' }}</textarea>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                      Batal
+                    </button>
+                    <button class="btn btn-primary">
+                      Simpan Perubahan
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+          </div>
+          {% endif %}
 
           {% if current_user.role == "admin" %}
           <div class="modal fade" id="deletePatientModal{{ patient.id }}" tabindex="-1">
