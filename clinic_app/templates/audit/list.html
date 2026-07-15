@@ -8,6 +8,13 @@
       Pantau seluruh aktivitas pengguna dalam sistem klinik.
     </p>
   </div>
+
+  <a
+    href="{{ url_for('audit.export_audit', q=keyword, module=selected_module, user_id=selected_user_id) }}"
+    class="btn btn-outline-success"
+  >
+    Export Excel
+  </a>
 </div>
 
 <div class="row g-4 mb-4">

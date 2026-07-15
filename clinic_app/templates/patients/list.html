@@ -9,11 +9,20 @@
     </p>
   </div>
 
-  {% if current_user.role in ["admin", "receptionist"] %}
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPatientModal">
-    + Tambah Pasien
-  </button>
-  {% endif %}
+  <div class="d-flex gap-2">
+    <a
+      href="{{ url_for('patients.export_patients', q=keyword) }}"
+      class="btn btn-outline-success"
+    >
+      Export Excel
+    </a>
+
+    {% if current_user.role in ["admin", "receptionist"] %}
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPatientModal">
+      + Tambah Pasien
+    </button>
+    {% endif %}
+  </div>
 </div>
 
 <div class="card shadow-sm border-0 mb-4">

@@ -5,6 +5,7 @@ from clinic_app.models import db
 from clinic_app.models.medicine import Medicine
 from clinic_app.models.prescription import PrescriptionItem
 from clinic_app.security import role_required
+from clinic_app.utils.export_excel import create_excel_response
 
 inventory_bp = Blueprint("inventory", __name__, url_prefix="/inventory")
 
@@ -48,6 +49,63 @@ def index():
         stats=stats,
         keyword=keyword,
         selected_stock_status=stock_status
+    )
+
+
+@inventory_bp.route("/export")
+@login_required
+@role_required("admin", "receptionist")
+def export_inventory():
+    keyword = request.args.get("q", "").strip()
+    stock_status = request.args.get("stock_status", "").strip()
+
+    query = Medicine.query
+
+    if keyword:
+        query = query.filter(Medicine.name.ilike(f"%{keyword}%"))
+
+    if stock_status == "low":
+        query = query.filter(Medicine.stock <= 10, Medicine.stock > 0)
+    elif stock_status == "empty":
+        query = query.filter(Medicine.stock <= 0)
+    elif stock_status == "safe":
+        query = query.filter(Medicine.stock > 10)
+
+    medicines = query.order_by(Medicine.name.asc()).all()
+
+    headers = [
+        "Nama Obat",
+        "Kategori",
+        "Unit",
+        "Stok",
+        "Status",
+        "Deskripsi"
+    ]
+
+    rows = []
+
+    for medicine in medicines:
+        if medicine.stock <= 0:
+            status = "Habis"
+        elif medicine.stock <= 10:
+            status = "Stok Rendah"
+        else:
+            status = "Aman"
+
+        rows.append([
+            medicine.name,
+            medicine.category or "-",
+            medicine.unit,
+            medicine.stock,
+            status,
+            medicine.description or "-"
+        ])
+
+    return create_excel_response(
+        filename_prefix="inventori_obat",
+        sheet_title="Inventori Obat",
+        headers=headers,
+        rows=rows
     )
 
 

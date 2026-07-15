@@ -10,6 +10,13 @@
   </div>
 
   <div class="d-flex gap-2 no-print">
+    <a
+      href="{{ url_for('patients.export_medical_record', patient_id=patient.id) }}"
+      class="btn btn-outline-success"
+    >
+      Export Excel
+    </a>
+
     <button onclick="window.print()" class="btn btn-primary">
       Print Rekam Medis
     </button>

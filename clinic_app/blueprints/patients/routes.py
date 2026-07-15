@@ -9,6 +9,7 @@ from clinic_app.models.user import User
 from clinic_app.models.prescription import Prescription, PrescriptionItem
 from clinic_app.models.medicine import Medicine
 from clinic_app.security import role_required
+from clinic_app.utils.export_excel import create_excel_response
 
 patients_bp = Blueprint("patients", __name__, url_prefix="/patients")
 
@@ -151,6 +152,121 @@ def medical_record(patient_id):
         stats=stats
     )
 
+@patients_bp.route("/export")
+@login_required
+@role_required("admin", "receptionist", "doctor")
+def export_patients():
+    keyword = request.args.get("q", "").strip()
+
+    query = Patient.query
+
+    if keyword:
+        query = query.filter(Patient.name.ilike(f"%{keyword}%"))
+
+    patients = query.order_by(Patient.created_at.desc()).all()
+
+    headers = [
+        "No. RM",
+        "Nama Pasien",
+        "Tanggal Lahir",
+        "Jenis Kelamin",
+        "Telepon",
+        "Alamat",
+        "Dibuat Pada"
+    ]
+
+    rows = []
+
+    for patient in patients:
+        rows.append([
+            patient.medical_record_number or "-",
+            patient.name,
+            patient.birthdate or "-",
+            patient.gender or "-",
+            patient.phone or "-",
+            patient.address or "-",
+            str(patient.created_at)
+        ])
+
+    return create_excel_response(
+        filename_prefix="data_pasien",
+        sheet_title="Data Pasien",
+        headers=headers,
+        rows=rows
+    )
+
+
+@patients_bp.route("/medical-record/<int:patient_id>/export")
+@login_required
+@role_required("admin", "doctor")
+def export_medical_record(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+
+    visits = Visit.query.filter_by(
+        patient_id=patient.id
+    ).order_by(
+        Visit.created_at.desc()
+    ).all()
+
+    headers = [
+        "No. RM",
+        "Nama Pasien",
+        "Tanggal Kunjungan",
+        "Dokter",
+        "Diagnosis",
+        "Catatan",
+        "Resep Obat"
+    ]
+
+    rows = []
+
+    for visit in visits:
+        doctor = User.query.get(visit.doctor_id) if visit.doctor_id else None
+
+        prescription = Prescription.query.filter_by(
+            visit_id=visit.id
+        ).first()
+
+        prescription_text = "-"
+
+        if prescription:
+            items = PrescriptionItem.query.filter_by(
+                prescription_id=prescription.id
+            ).all()
+
+            prescription_list = []
+
+            for item in items:
+                medicine = Medicine.query.get(item.medicine_id)
+
+                if medicine:
+                    prescription_list.append(
+                        f"{medicine.name} - {item.qty} {medicine.unit}"
+                    )
+                else:
+                    prescription_list.append(
+                        f"Obat tidak ditemukan - {item.qty}"
+                    )
+
+            if prescription_list:
+                prescription_text = "\n".join(prescription_list)
+
+        rows.append([
+            patient.medical_record_number or "-",
+            patient.name,
+            str(visit.created_at),
+            doctor.name if doctor else "-",
+            visit.diagnosis or "-",
+            visit.notes or "-",
+            prescription_text
+        ])
+
+    return create_excel_response(
+        filename_prefix=f"rekam_medis_{patient.medical_record_number or patient.id}",
+        sheet_title="Rekam Medis",
+        headers=headers,
+        rows=rows
+    )
 
 @patients_bp.route("/delete/<int:patient_id>", methods=["POST"])
 @login_required

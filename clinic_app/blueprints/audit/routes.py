@@ -4,6 +4,7 @@ from flask_login import login_required
 from clinic_app.models.audit_log import AuditLog
 from clinic_app.models.user import User
 from clinic_app.security import role_required
+from clinic_app.utils.export_excel import create_excel_response
 
 audit_bp = Blueprint("audit", __name__, url_prefix="/audit")
 
@@ -64,4 +65,64 @@ def index():
         keyword=keyword,
         selected_module=module,
         selected_user_id=user_id
+    )
+
+
+@audit_bp.route("/export")
+@login_required
+@role_required("admin")
+def export_audit():
+    keyword = request.args.get("q", "").strip()
+    module = request.args.get("module", "").strip()
+    user_id = request.args.get("user_id", "").strip()
+
+    query = AuditLog.query
+
+    if keyword:
+        query = query.filter(
+            AuditLog.action.ilike(f"%{keyword}%")
+        )
+
+    if module:
+        query = query.filter_by(module=module)
+
+    if user_id:
+        query = query.filter_by(user_id=int(user_id))
+
+    logs = query.order_by(
+        AuditLog.timestamp.desc()
+    ).limit(1000).all()
+
+    headers = [
+        "Waktu",
+        "User",
+        "Email",
+        "Role",
+        "Action",
+        "Module",
+        "Details",
+        "IP Address",
+        "User Agent"
+    ]
+
+    rows = []
+
+    for log in logs:
+        rows.append([
+            str(log.timestamp),
+            log.user.name if log.user else "Guest / Unknown",
+            log.user.email if log.user else "-",
+            log.user.role if log.user else "-",
+            log.action,
+            log.module or "-",
+            log.details or "-",
+            log.ip_address or "-",
+            log.user_agent or "-"
+        ])
+
+    return create_excel_response(
+        filename_prefix="audit_log",
+        sheet_title="Audit Log",
+        headers=headers,
+        rows=rows
     )

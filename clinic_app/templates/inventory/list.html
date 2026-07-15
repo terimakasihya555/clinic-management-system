@@ -9,11 +9,20 @@
     </p>
   </div>
 
-  {% if current_user.role == "admin" %}
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMedicineModal">
-    + Tambah Obat
-  </button>
-  {% endif %}
+  <div class="d-flex gap-2">
+    <a
+      href="{{ url_for('inventory.export_inventory', q=keyword, stock_status=selected_stock_status) }}"
+      class="btn btn-outline-success"
+    >
+      Export Excel
+    </a>
+
+    {% if current_user.role == "admin" %}
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMedicineModal">
+      + Tambah Obat
+    </button>
+    {% endif %}
+  </div>
 </div>
 
 <div class="row g-4 mb-4">
