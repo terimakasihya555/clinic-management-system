@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required
 
 from clinic_app.models import db
@@ -12,6 +12,15 @@ from clinic_app.security import role_required
 from clinic_app.utils.export_excel import create_excel_response
 
 patients_bp = Blueprint("patients", __name__, url_prefix="/patients")
+
+
+def get_patient_or_404(patient_id):
+    patient = db.session.get(Patient, patient_id)
+
+    if not patient:
+        abort(404)
+
+    return patient
 
 
 @patients_bp.route("/")
@@ -72,7 +81,7 @@ def create():
 @login_required
 @role_required("admin", "receptionist")
 def update(patient_id):
-    patient = Patient.query.get_or_404(patient_id)
+    patient = get_patient_or_404(patient_id)
 
     name = request.form.get("name", "").strip()
     birthdate = request.form.get("birthdate")
@@ -95,62 +104,6 @@ def update(patient_id):
     flash("Data pasien berhasil diperbarui.", "success")
     return redirect(url_for("patients.index"))
 
-
-@patients_bp.route("/medical-record/<int:patient_id>")
-@login_required
-@role_required("admin", "doctor")
-def medical_record(patient_id):
-    patient = Patient.query.get_or_404(patient_id)
-
-    visits = Visit.query.filter_by(
-        patient_id=patient.id
-    ).order_by(
-        Visit.created_at.desc()
-    ).all()
-
-    visit_records = []
-
-    for visit in visits:
-        doctor = User.query.get(visit.doctor_id) if visit.doctor_id else None
-
-        prescription = Prescription.query.filter_by(
-            visit_id=visit.id
-        ).first()
-
-        prescription_items = []
-
-        if prescription:
-            items = PrescriptionItem.query.filter_by(
-                prescription_id=prescription.id
-            ).all()
-
-            for item in items:
-                medicine = Medicine.query.get(item.medicine_id)
-
-                prescription_items.append({
-                    "medicine": medicine,
-                    "qty": item.qty
-                })
-
-        visit_records.append({
-            "visit": visit,
-            "doctor": doctor,
-            "prescription_items": prescription_items
-        })
-
-    stats = {
-        "total_visits": len(visit_records),
-        "total_prescriptions": sum(
-            1 for record in visit_records if record["prescription_items"]
-        )
-    }
-
-    return render_template(
-        "patients/medical_record.html",
-        patient=patient,
-        visit_records=visit_records,
-        stats=stats
-    )
 
 @patients_bp.route("/export")
 @login_required
@@ -196,11 +149,68 @@ def export_patients():
     )
 
 
+@patients_bp.route("/medical-record/<int:patient_id>")
+@login_required
+@role_required("admin", "doctor")
+def medical_record(patient_id):
+    patient = get_patient_or_404(patient_id)
+
+    visits = Visit.query.filter_by(
+        patient_id=patient.id
+    ).order_by(
+        Visit.created_at.desc()
+    ).all()
+
+    visit_records = []
+
+    for visit in visits:
+        doctor = db.session.get(User, visit.doctor_id) if visit.doctor_id else None
+
+        prescription = Prescription.query.filter_by(
+            visit_id=visit.id
+        ).first()
+
+        prescription_items = []
+
+        if prescription:
+            items = PrescriptionItem.query.filter_by(
+                prescription_id=prescription.id
+            ).all()
+
+            for item in items:
+                medicine = db.session.get(Medicine, item.medicine_id)
+
+                prescription_items.append({
+                    "medicine": medicine,
+                    "qty": item.qty
+                })
+
+        visit_records.append({
+            "visit": visit,
+            "doctor": doctor,
+            "prescription_items": prescription_items
+        })
+
+    stats = {
+        "total_visits": len(visit_records),
+        "total_prescriptions": sum(
+            1 for record in visit_records if record["prescription_items"]
+        )
+    }
+
+    return render_template(
+        "patients/medical_record.html",
+        patient=patient,
+        visit_records=visit_records,
+        stats=stats
+    )
+
+
 @patients_bp.route("/medical-record/<int:patient_id>/export")
 @login_required
 @role_required("admin", "doctor")
 def export_medical_record(patient_id):
-    patient = Patient.query.get_or_404(patient_id)
+    patient = get_patient_or_404(patient_id)
 
     visits = Visit.query.filter_by(
         patient_id=patient.id
@@ -221,7 +231,7 @@ def export_medical_record(patient_id):
     rows = []
 
     for visit in visits:
-        doctor = User.query.get(visit.doctor_id) if visit.doctor_id else None
+        doctor = db.session.get(User, visit.doctor_id) if visit.doctor_id else None
 
         prescription = Prescription.query.filter_by(
             visit_id=visit.id
@@ -237,7 +247,7 @@ def export_medical_record(patient_id):
             prescription_list = []
 
             for item in items:
-                medicine = Medicine.query.get(item.medicine_id)
+                medicine = db.session.get(Medicine, item.medicine_id)
 
                 if medicine:
                     prescription_list.append(
@@ -268,11 +278,12 @@ def export_medical_record(patient_id):
         rows=rows
     )
 
+
 @patients_bp.route("/delete/<int:patient_id>", methods=["POST"])
 @login_required
 @role_required("admin")
 def delete(patient_id):
-    patient = Patient.query.get_or_404(patient_id)
+    patient = get_patient_or_404(patient_id)
 
     related_queue = QueueEntry.query.filter_by(patient_id=patient.id).first()
     related_visit = Visit.query.filter_by(patient_id=patient.id).first()
