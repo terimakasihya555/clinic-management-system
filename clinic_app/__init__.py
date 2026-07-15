@@ -38,14 +38,16 @@ def create_app(config_class=Config):
     from clinic_app.blueprints.doctor.routes import doctor_bp
     from clinic_app.blueprints.inventory.routes import inventory_bp
     from clinic_app.blueprints.audit.routes import audit_bp
+    from clinic_app.blueprints.health.routes import health_bp
 
-    app.register_blueprint(users_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(patients_bp)
     app.register_blueprint(queue_bp)
     app.register_blueprint(doctor_bp)
     app.register_blueprint(inventory_bp)
     app.register_blueprint(audit_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(health_bp)
 
     @app.route("/")
     def index():
