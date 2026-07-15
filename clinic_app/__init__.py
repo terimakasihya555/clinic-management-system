@@ -10,6 +10,7 @@ from clinic_app.models.patient import Patient
 from clinic_app.models.queue import QueueEntry
 from clinic_app.models.audit_log import AuditLog
 from clinic_app.security import init_security
+from clinic_app.utils.logging_config import setup_logging
 
 
 login_manager = LoginManager()
@@ -23,6 +24,7 @@ def load_user(user_id):
 
 def create_app(config_class=Config):
     app = Flask(__name__)
+    setup_logging(app)
     app.config.from_object(config_class)
 
     db.init_app(app)
