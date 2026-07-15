@@ -141,7 +141,7 @@ def test_admin_can_update_patient(client, app):
     assert response.status_code == 200
 
     with app.app_context():
-        updated_patient = Patient.query.get(patient_id)
+        updated_patient = db.session.get(Patient, patient_id)
         assert updated_patient.name == "Budi Updated"
         assert updated_patient.phone == "08999999999"
         assert updated_patient.address == "Bandung"

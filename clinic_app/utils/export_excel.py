@@ -1,5 +1,5 @@
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import send_file
 from openpyxl import Workbook
@@ -60,7 +60,7 @@ def create_excel_response(filename_prefix, sheet_title, headers, rows):
     workbook.save(output)
     output.seek(0)
 
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"{filename_prefix}_{timestamp}.xlsx"
 
     return send_file(
