@@ -1,10 +1,11 @@
-from datetime import datetime, timedelta
 from functools import wraps
+from datetime import datetime, timedelta, timezone
 
-from flask import request, abort, current_app, session, flash, redirect, url_for
+from flask import request, abort, redirect, url_for, session
 from flask_login import current_user, logout_user
 
 from clinic_app.models import db
+from clinic_app.models.audit_log import AuditLog
 
 
 _rate_limit_storage = {}
@@ -27,6 +28,26 @@ def role_required(*allowed_roles):
     return decorator
 
 
+def get_utc_now():
+    return datetime.now(timezone.utc)
+
+
+def parse_session_datetime(value):
+    if not value:
+        return None
+
+    try:
+        parsed_value = datetime.fromisoformat(value)
+
+        if parsed_value.tzinfo is None:
+            parsed_value = parsed_value.replace(tzinfo=timezone.utc)
+
+        return parsed_value
+
+    except ValueError:
+        return None
+
+
 def get_client_ip():
     forwarded_for = request.headers.get("X-Forwarded-For")
 
@@ -40,11 +61,22 @@ def restrict_ip():
     if request.endpoint == "static":
         return None
 
-    if not current_app.config.get("ENABLE_IP_RESTRICTION", False):
+    app_config = request.app.config if hasattr(request, "app") else None
+
+    enable_ip_restriction = False
+    allowed_prefixes = ["127.", "192.168.", "10."]
+
+    if app_config:
+        enable_ip_restriction = app_config.get("ENABLE_IP_RESTRICTION", False)
+        allowed_prefixes = app_config.get("ALLOWED_IP_PREFIXES", allowed_prefixes)
+
+    if not enable_ip_restriction:
         return None
 
     client_ip = get_client_ip()
-    allowed_prefixes = current_app.config.get("ALLOWED_IP_PREFIXES", [])
+
+    if client_ip == "::1":
+        return None
 
     is_allowed = any(
         client_ip.startswith(prefix)
@@ -61,26 +93,32 @@ def simple_rate_limit():
     if request.endpoint == "static":
         return None
 
-    max_requests = current_app.config.get("RATE_LIMIT_MAX_REQUESTS", 200)
-    window_seconds = current_app.config.get("RATE_LIMIT_WINDOW_SECONDS", 60)
+    max_requests = 200
+    window_seconds = 60
+
+    try:
+        max_requests = request.app.config.get("RATE_LIMIT_MAX_REQUESTS", 200)
+        window_seconds = request.app.config.get("RATE_LIMIT_WINDOW_SECONDS", 60)
+    except AttributeError:
+        pass
 
     client_ip = get_client_ip()
-    now = datetime.utcnow()
+    now = get_utc_now()
     window_start = now - timedelta(seconds=window_seconds)
 
-    request_times = _rate_limit_storage.get(client_ip, [])
+    if client_ip not in _rate_limit_storage:
+        _rate_limit_storage[client_ip] = []
 
-    request_times = [
+    _rate_limit_storage[client_ip] = [
         request_time
-        for request_time in request_times
-        if request_time > window_start
+        for request_time in _rate_limit_storage[client_ip]
+        if request_time >= window_start
     ]
 
-    if len(request_times) >= max_requests:
+    if len(_rate_limit_storage[client_ip]) >= max_requests:
         abort(429)
 
-    request_times.append(now)
-    _rate_limit_storage[client_ip] = request_times
+    _rate_limit_storage[client_ip].append(now)
 
     return None
 
@@ -90,21 +128,25 @@ def session_timeout():
         return None
 
     if not current_user.is_authenticated:
+        session.pop("last_activity", None)
         return None
 
-    timeout_minutes = current_app.config.get("SESSION_TIMEOUT_MINUTES", 30)
-    now = datetime.utcnow()
+    timeout_minutes = 30
 
-    last_activity = session.get("last_activity")
+    try:
+        timeout_minutes = request.app.config.get("SESSION_TIMEOUT_MINUTES", 30)
+    except AttributeError:
+        pass
+
+    now = get_utc_now()
+    last_activity = parse_session_datetime(session.get("last_activity"))
 
     if last_activity:
-        last_activity_time = datetime.fromisoformat(last_activity)
-        timeout_limit = timedelta(minutes=timeout_minutes)
+        inactive_time = now - last_activity
 
-        if now - last_activity_time > timeout_limit:
+        if inactive_time > timedelta(minutes=timeout_minutes):
             logout_user()
             session.clear()
-            flash("Sesi login telah berakhir. Silakan login kembali.", "warning")
             return redirect(url_for("auth.login"))
 
     session["last_activity"] = now.isoformat()
@@ -122,36 +164,29 @@ def set_security_headers(response):
 
 
 def audit_after_request(response):
+    if request.endpoint == "static":
+        return response
+
+    if request.method not in ["POST", "PUT", "PATCH", "DELETE"]:
+        return response
+
+    if response.status_code >= 500:
+        return response
+
     try:
-        if request.endpoint == "static":
-            return response
+        user_id = current_user.id if current_user.is_authenticated else None
 
-        if request.method not in ["POST", "PUT", "PATCH", "DELETE"]:
-            return response
-
-        from clinic_app.models.audit_log import AuditLog
-
-        endpoint = request.endpoint or "-"
-        module = endpoint.split(".")[0] if "." in endpoint else endpoint
-        client_ip = get_client_ip()
-        user_agent = request.headers.get("User-Agent", "-")
-
-        user_id = None
-
-        if current_user and current_user.is_authenticated:
-            user_id = current_user.id
-
-        log = AuditLog(
+        audit_log = AuditLog(
             user_id=user_id,
             action=f"{request.method} {request.path}",
-            module=module,
+            module=request.blueprint or "general",
             record_id=None,
-            details=f"Status code: {response.status_code}",
-            ip_address=client_ip,
-            user_agent=user_agent
+            details=f"Endpoint: {request.endpoint}",
+            ip_address=get_client_ip(),
+            user_agent=request.headers.get("User-Agent", "-")
         )
 
-        db.session.add(log)
+        db.session.add(audit_log)
         db.session.commit()
 
     except Exception:
