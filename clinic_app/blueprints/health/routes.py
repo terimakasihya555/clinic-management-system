@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, current_app
 from sqlalchemy import text
 
 from clinic_app.models import db
@@ -21,6 +21,7 @@ def health_check():
 
     return jsonify({
         "status": "ok" if status_code == 200 else "error",
-        "app": "Clinic Management System",
+        "app": current_app.config.get("APP_NAME", "Clinic Management System"),
+        "version": current_app.config.get("APP_VERSION", "unknown"),
         "database": database_status
     }), status_code

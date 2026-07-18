@@ -1,5 +1,5 @@
 from clinic_app import create_app
-from clinic_app.models import db
+from clinic_app.models import db, load_models
 
 
 def test_health_check_returns_ok(monkeypatch):
@@ -15,6 +15,7 @@ def test_health_check_returns_ok(monkeypatch):
     )
 
     with app.app_context():
+        load_models()
         db.drop_all()
         db.create_all()
 
@@ -28,4 +29,5 @@ def test_health_check_returns_ok(monkeypatch):
 
     assert data["status"] == "ok"
     assert data["app"] == "Clinic Management System"
+    assert data["version"] == "1.0.0"
     assert data["database"] == "connected"

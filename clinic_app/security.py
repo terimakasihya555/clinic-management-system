@@ -1,7 +1,7 @@
 from functools import wraps
 from datetime import datetime, timedelta, timezone
 
-from flask import request, abort, redirect, url_for, session
+from flask import request, abort, redirect, url_for, session, current_app
 from flask_login import current_user, logout_user
 
 from clinic_app.models import db
@@ -61,14 +61,15 @@ def restrict_ip():
     if request.endpoint == "static":
         return None
 
-    app_config = request.app.config if hasattr(request, "app") else None
+    enable_ip_restriction = current_app.config.get(
+        "ENABLE_IP_RESTRICTION",
+        False
+    )
 
-    enable_ip_restriction = False
-    allowed_prefixes = ["127.", "192.168.", "10."]
-
-    if app_config:
-        enable_ip_restriction = app_config.get("ENABLE_IP_RESTRICTION", False)
-        allowed_prefixes = app_config.get("ALLOWED_IP_PREFIXES", allowed_prefixes)
+    allowed_prefixes = current_app.config.get(
+        "ALLOWED_IP_PREFIXES",
+        ["127.", "192.168.", "10."]
+    )
 
     if not enable_ip_restriction:
         return None
@@ -93,14 +94,8 @@ def simple_rate_limit():
     if request.endpoint == "static":
         return None
 
-    max_requests = 200
-    window_seconds = 60
-
-    try:
-        max_requests = request.app.config.get("RATE_LIMIT_MAX_REQUESTS", 200)
-        window_seconds = request.app.config.get("RATE_LIMIT_WINDOW_SECONDS", 60)
-    except AttributeError:
-        pass
+    max_requests = current_app.config.get("RATE_LIMIT_MAX_REQUESTS", 200)
+    window_seconds = current_app.config.get("RATE_LIMIT_WINDOW_SECONDS", 60)
 
     client_ip = get_client_ip()
     now = get_utc_now()
@@ -131,12 +126,7 @@ def session_timeout():
         session.pop("last_activity", None)
         return None
 
-    timeout_minutes = 30
-
-    try:
-        timeout_minutes = request.app.config.get("SESSION_TIMEOUT_MINUTES", 30)
-    except AttributeError:
-        pass
+    timeout_minutes = current_app.config.get("SESSION_TIMEOUT_MINUTES", 30)
 
     now = get_utc_now()
     last_activity = parse_session_datetime(session.get("last_activity"))
