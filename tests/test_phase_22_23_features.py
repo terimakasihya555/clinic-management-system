@@ -7,6 +7,7 @@ from clinic_app.models.user import User
 from clinic_app.models.patient import Patient
 from clinic_app.models.medicine import Medicine
 from clinic_app.models.audit_log import AuditLog
+from clinic_app.models.queue import QueueEntry
 
 
 @pytest.fixture
@@ -203,3 +204,45 @@ def test_export_audit_log_excel(client):
     response = client.get("/audit/export")
 
     assert_excel_response(response)
+    
+def test_receptionist_can_access_patient_page(client):
+    login(client, "reception@test.local", "reception123")
+
+    response = client.get("/patients/")
+
+    assert response.status_code == 200
+    assert b"Data Pasien" in response.data
+
+
+def test_receptionist_can_create_queue(client, app):
+    login(client, "reception@test.local", "reception123")
+
+    with app.app_context():
+        patient = Patient.query.first()
+        patient_id = patient.id
+
+    response = client.post(
+        f"/queue/add/{patient_id}",
+        data={
+            "kind": "walkin"
+        },
+        follow_redirects=True
+    )
+
+    assert response.status_code == 200
+
+    with app.app_context():
+        queue_entry = QueueEntry.query.filter_by(
+            patient_id=patient_id
+        ).first()
+
+        assert queue_entry is not None
+        assert queue_entry.kind == "walkin"
+
+
+def test_receptionist_cannot_access_audit_log(client):
+    login(client, "reception@test.local", "reception123")
+
+    response = client.get("/audit/", follow_redirects=False)
+
+    assert response.status_code == 403

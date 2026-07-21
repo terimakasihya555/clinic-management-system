@@ -1,14 +1,28 @@
-from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
 from flask_login import login_required
 
 from clinic_app.models import db
 from clinic_app.models.patient import Patient
 from clinic_app.models.queue import QueueEntry
 from clinic_app.security import role_required
+from clinic_app.utils.time import utc_now
 
 queue_bp = Blueprint("queue", __name__, url_prefix="/queue")
+def get_patient_or_404(patient_id):
+    patient = db.session.get(Patient, patient_id)
 
+    if not patient:
+        abort(404)
+
+    return patient
+
+def get_queue_or_404(queue_id):
+    queue_entry = db.session.get(QueueEntry, queue_id)
+
+    if not queue_entry:
+        abort(404)
+
+    return queue_entry
 
 @queue_bp.route("/")
 @login_required
@@ -48,7 +62,7 @@ def index():
 @login_required
 @role_required("admin", "receptionist")
 def add(patient_id):
-    Patient.query.get_or_404(patient_id)
+    patient = get_patient_or_404(patient_id)
 
     kind = request.form.get("kind", "walkin")
 
@@ -67,7 +81,7 @@ def add(patient_id):
     priority = priority_map.get(kind, 3)
     prefix = prefix_map.get(kind, "W")
 
-    today = datetime.utcnow().date()
+    today = utc_now().date()
 
     count_today = QueueEntry.query.filter(
         db.func.date(QueueEntry.created_at) == today,
@@ -95,7 +109,7 @@ def add(patient_id):
 @login_required
 @role_required("admin", "doctor")
 def finish(queue_id):
-    entry = QueueEntry.query.get_or_404(queue_id)
+    entry = get_queue_or_404(queue_id)
     entry.status = "done"
     db.session.commit()
 
@@ -107,9 +121,13 @@ def finish(queue_id):
 @login_required
 @role_required("admin", "receptionist")
 def cancel(queue_id):
-    entry = QueueEntry.query.get_or_404(queue_id)
+    entry = get_queue_or_404(queue_id)
+
     db.session.delete(entry)
     db.session.commit()
+
+    flash(f"Antrian {entry.number} berhasil dibatalkan.", "success")
+    return redirect(url_for("queue.index"))
 
     flash(f"Antrian {entry.number} berhasil dibatalkan.", "success")
     return redirect(url_for("queue.index"))
